@@ -8,3 +8,4 @@ hdbscan==0.8.38.post1
 python-dotenv==1.0.1
 seaborn==0.13.2
 datamapplot==0.3.0
+black==24.8.0
