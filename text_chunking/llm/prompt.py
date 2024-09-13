@@ -2,6 +2,7 @@ import langchain
 from langchain.prompts import PromptTemplate
 from dataclasses import dataclass
 
+
 @dataclass
 class ChunkSummaryPrompt:
     system_prompt: str = """

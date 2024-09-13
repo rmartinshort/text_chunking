@@ -1,12 +1,17 @@
 from dataclasses import dataclass
 from langchain_community.document_loaders import GutenbergLoader
+
+
 @dataclass
 class TextTextNovel:
 
     # Project Gutenberg Wizard of Oz book
-    example_text_loader = GutenbergLoader("https://www.gutenberg.org/cache/epub/55/pg55.txt")
+    example_text_loader = GutenbergLoader(
+        "https://www.gutenberg.org/cache/epub/55/pg55.txt"
+    )
     example_text = example_text_loader.load()
     testing_text: str = example_text[0].page_content
+
 
 @dataclass
 class TestText:

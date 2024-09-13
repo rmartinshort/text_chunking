@@ -2,6 +2,7 @@ from langchain_core.output_parsers.string import StrOutputParser
 from langchain.callbacks import get_openai_callback
 from text_chunking.llm.prompt import ChunkSummaryPrompt
 
+
 class ChunkSummarizer(object):
     def __init__(self, llm):
         self.prompt = ChunkSummaryPrompt()

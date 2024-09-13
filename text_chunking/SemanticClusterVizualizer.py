@@ -5,6 +5,8 @@ from text_chunking.llm.chain import ChunkSummarizer
 import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
+
+
 class SemanticClusterVizualizer:
 
     def __init__(
@@ -20,7 +22,9 @@ class SemanticClusterVizualizer:
         self.split_generator = SemanticSplitGenerator(ChunkSummarizer(self.llm))
         self.split_visualizer = SemanticGroupUtils()
 
-    def split_documents(self, splitter, documents, verbose: bool = True):
+    def split_documents(
+        self, splitter, documents, min_chunk_len: int, verbose: bool = True
+    ):
         """
         RecursiveCharacterTextSplitter(
             chunk_size=250,
@@ -32,24 +36,49 @@ class SemanticClusterVizualizer:
         self.splitter = splitter
         logging.info("Splitting text with original splitter")
         doc_splits = self.splitter.split_text(documents)
+        doc_splits = self.merge_short_documents(doc_splits, min_len=min_chunk_len)
 
         if verbose:
             # print some stats about the chunks that have been created
             max_len = 0
-            min_len = float('inf')
+            min_len = float("inf")
             lsplits = len(doc_splits)
             sum_len = 0
             for text in doc_splits:
                 lt = len(text)
                 sum_len += lt
-                max_len = max(max_len,lt)
-                min_len = min(min_len,lt)
-            mean_len = sum_len/lsplits
+                max_len = max(max_len, lt)
+                min_len = min(min_len, lt)
+            mean_len = sum_len / lsplits
             logging.info(
-                "Creating {} chunks\nMean len: {}\nMax len: {}\nMin len: {}".format(lsplits,mean_len,max_len,min_len)
+                "Creating {} chunks\nMean len: {}\nMax len: {}\nMin len: {}".format(
+                    lsplits, mean_len, max_len, min_len
+                )
             )
 
         return doc_splits
+
+    @staticmethod
+    def merge_short_documents(split_texts, min_len=100):
+        """
+        If we find a document with length < min len, just attach it to the end
+        of the previous document. This prevents a situation where tiny document chunks
+        might be incorrectly classified. There should be a relationship between min len and
+        chunk size
+
+        :param min_len:
+        :return:
+        """
+
+        merged_splits = []
+        for text in split_texts:
+            if merged_splits and (len(text) < min_len):
+                last_text = merged_splits.pop()
+                merged_splits.append(last_text + " " + text)
+            else:
+                merged_splits.append(text)
+
+        return merged_splits
 
     def embed_original_document_splits(self, doc_splits):
         """
@@ -72,7 +101,12 @@ class SemanticClusterVizualizer:
         return semantic_group_embeddings
 
     def generate_breakpoints(
-        self, doc_splits, doc_split_embeddings, length_threshold=10000, plot=True, verbose=True
+        self,
+        doc_splits,
+        doc_split_embeddings,
+        length_threshold=10000,
+        plot=True,
+        verbose=True,
     ):
         """
 
@@ -98,7 +132,7 @@ class SemanticClusterVizualizer:
         if verbose:
             n_groups = len(semantic_groups)
             max_len = 0
-            min_len = float('inf')
+            min_len = float("inf")
             lsplits = len(doc_splits)
             sum_len = 0
             for text in semantic_groups:
@@ -108,9 +142,10 @@ class SemanticClusterVizualizer:
                 min_len = min(min_len, lt)
             mean_len = sum_len / n_groups
             logging.info(
-                "Creating {} semantic groups\nMean len: {}\nMax len: {}\nMin len: {}".format(n_groups, mean_len, max_len, min_len)
+                "Creating {} semantic groups\nMean len: {}\nMax len: {}\nMin len: {}".format(
+                    n_groups, mean_len, max_len, min_len
+                )
             )
-
 
         return breakpoints, semantic_groups
 

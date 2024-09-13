@@ -12,6 +12,7 @@ import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
+
 class SemanticGroupUtils:
     """
     A set of tools to manipulate and visualize semantic text splits
@@ -49,7 +50,9 @@ class SemanticGroupUtils:
         ax.set_ylabel("Cosine distance between splits")
 
     @staticmethod
-    def plot_2d_semantic_embeddings(semantic_embeddings: List, semantic_text_groups: List[str]) -> None:
+    def plot_2d_semantic_embeddings(
+        semantic_embeddings: List, semantic_text_groups: List[str]
+    ) -> None:
         """
         Create plot of semantic embeddings in 2D
 
@@ -74,19 +77,14 @@ class SemanticGroupUtils:
         )
 
         # scale the chunk end lengths
-        splits_df["scaled_chunk_end"] = (
-            MinMaxScaler()
-            .fit_transform(
-                np.cumsum([len(x) for x in semantic_text_groups]).reshape(-1, 1)
-            )
-            .ravel()
-        )
+        splits_df["chunk_end"] = np.cumsum([len(x) for x in semantic_text_groups])
+
         ax = splits_df.plot.scatter(
             x="reduced_embeddings_x", y="reduced_embeddings_y", c="idx", cmap="viridis"
         )
         # Draw arrows between points
-        #X = reduced_embeddings[:, 0]
-        #Y = reduced_embeddings[:, 1]
+        # X = reduced_embeddings[:, 0]
+        # Y = reduced_embeddings[:, 1]
 
         # for i in range(len(X) - 1):
         #     ax.arrow(X[i], Y[i], X[i + 1] - X[i], Y[i + 1] - Y[i], head_width=0.05, head_length=0.05, fc='black', ec='black', alpha=0.5)
@@ -101,7 +99,10 @@ class SemanticGroupUtils:
 
     @staticmethod
     def plot_2d_semantic_embeddings_with_clusters(
-        semantic_embeddings: List, semantic_text_groups: List, linkage: np.array, n_clusters: int = 30
+        semantic_embeddings: List,
+        semantic_text_groups: List,
+        linkage: np.array,
+        n_clusters: int = 30,
     ) -> pd.DataFrame:
         """
         Create plot of 2D reduced embeddings with cluster labels
@@ -124,13 +125,8 @@ class SemanticGroupUtils:
                 "cluster_label": cluster_labels,
             }
         )
-        splits_df["scaled_chunk_end"] = (
-            MinMaxScaler()
-            .fit_transform(
-                np.cumsum([len(x) for x in semantic_text_groups]).reshape(-1, 1)
-            )
-            .ravel()
-        )
+        splits_df["chunk_end"] = np.cumsum([len(x) for x in semantic_text_groups]).reshape(-1, 1)
+
 
         ax = splits_df.plot.scatter(
             x="reduced_embeddings_x",
@@ -219,3 +215,50 @@ class SemanticGroupUtils:
             figsize=(12, 8),
             label_font_size=8,
         )
+
+    @staticmethod
+    def plot_corpus_and_clusters(
+        splits_df: pd.DataFrame, cluster_summaries: dict = {}
+    ) -> pd.DataFrame:
+        df = splits_df
+
+        # Identify the start of a new segment
+        df["shifted"] = df["cluster_label"].shift(1)
+        df["is_new_segment"] = (df["cluster_label"] != df["shifted"]).astype(int)
+        segment_groups = df["is_new_segment"].cumsum()
+
+        # Group by cluster label and segment group
+        result = df.groupby(["cluster_label", segment_groups]).apply(
+            lambda g: (g.index.min()-1, g.index.max())
+        )
+
+        result = result.reset_index()[["cluster_label", 0]].rename(
+            columns={0: "index_span"}
+        )
+        unique_clusters = len(result["cluster_label"].unique())
+        cluster_colors = sns.color_palette("flare", n_colors=unique_clusters)
+
+        fig = plt.figure(figsize=(15, 6))
+        ax = fig.add_subplot(111)
+        for i, row in result.iterrows():
+            cluster_id = row["cluster_label"]
+            span = row["index_span"]
+            xmin = splits_df.iloc[max(span[0], 0)]["chunk_end"]
+            xmax = splits_df.iloc[min(span[1], len(splits_df) - 1)]["chunk_end"]
+
+            ax.vlines([xmin, xmax], ymin=-1, ymax=1, color="k")
+            ax.annotate(text=str(cluster_id), xy=((xmin + xmax) / 2, 0), ha="center")
+            ax.axvspan(
+                xmin=xmin, xmax=xmax, ymin=-1, ymax=1, color=cluster_colors[cluster_id]
+            )
+
+        ax.set_xlabel("Progression of corpus")
+        ax.set_yticks([])
+        ax.set_title("Corpus and cluster labels")
+
+        if cluster_summaries:
+            cluster_summaries = {idx: k["summary"] for idx, k in cluster_summaries.items()}
+            for k, v in cluster_summaries.items():
+                print("{} : {}".format(k,v))
+
+        return result

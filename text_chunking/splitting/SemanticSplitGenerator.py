@@ -6,6 +6,7 @@ import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
+
 class SemanticSplitGenerator:
 
     def __init__(self, llm_chain, split_texts=None, split_text_embeddings=None):
@@ -43,7 +44,9 @@ class SemanticSplitGenerator:
         return ln
 
     @staticmethod
-    def get_breakpoints(embeddings, start: int = 0, end: int = None, threshold: int = 0.95):
+    def get_breakpoints(
+        embeddings, start: int = 0, end: int = None, threshold: int = 0.95
+    ):
         """
 
         :param embeddings:
@@ -147,7 +150,7 @@ class SemanticSplitGenerator:
             res = self.summarizer.run_and_count_tokens(input_dict)
             if verbose:
                 logging.info("-" * 20)
-                logging.info("Chunk {} summary: {}".format(i+1, res[0]))
+                logging.info("Chunk {} summary: {}".format(i + 1, res[0]))
             summaries.append(res[0])
 
         # collect result into dictionary
