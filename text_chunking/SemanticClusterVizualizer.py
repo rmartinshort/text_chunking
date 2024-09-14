@@ -3,43 +3,59 @@ from text_chunking.splitting.SemanticSplitGenerator import SemanticSplitGenerato
 from text_chunking.utils.SemanticGroupUtils import SemanticGroupUtils
 from text_chunking.llm.chain import ChunkSummarizer
 import logging
+import numpy as np
+from typing import List, Tuple, Dict, Any
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 
 class SemanticClusterVizualizer:
+    """
+    A class for visualizing semantic clusters of text documents using embeddings and language models.
+    """
 
     def __init__(
         self,
-        api_key,
-        llm_model="gpt-4o-mini",
-        temperature=0,
-        embeddings_model="text-embedding-3-small",
-    ):
+        api_key: str,
+        llm_model: str = "gpt-4o-mini",
+        temperature: float = 0,
+        embeddings_model: str = "text-embedding-3-small",
+    ) -> None:
+        """
+        Initializes the SemanticClusterVizualizer with language model and embedding configurations.
 
+        Args:
+            api_key (str): API key for accessing language and embedding models.
+            llm_model (str, optional): Language model to use. Defaults to "gpt-4o-mini".
+            temperature (float, optional): Temperature setting for the language model. Defaults to 0.
+            embeddings_model (str, optional): Embeddings model to use. Defaults to "text-embedding-3-small".
+        """
         self.llm = ChatOpenAI(model=llm_model, temperature=temperature, api_key=api_key)
         self.embeddings = OpenAIEmbeddings(model=embeddings_model, api_key=api_key)
         self.split_generator = SemanticSplitGenerator(ChunkSummarizer(self.llm))
         self.split_visualizer = SemanticGroupUtils()
 
     def split_documents(
-        self, splitter, documents, min_chunk_len: int, verbose: bool = True
-    ):
+        self, splitter: Any, documents: str, min_chunk_len: int, verbose: bool = True
+    ) -> List[str]:
         """
-        RecursiveCharacterTextSplitter(
-            chunk_size=250,
-            chunk_overlap=0,
-            is_separator_regex=False
-        )
-        """
+        Splits documents into chunks using a specified splitter and merges short documents.
 
+        Args:
+            splitter (Any): A text splitter object.
+            documents (str): The document text to be split.
+            min_chunk_len (int): Minimum length for a chunk to avoid merging.
+            verbose (bool, optional): Whether to log the splitting process. Defaults to True.
+
+        Returns:
+            List[str]: A list of document chunks.
+        """
         self.splitter = splitter
         logging.info("Splitting text with original splitter")
         doc_splits = self.splitter.split_text(documents)
         doc_splits = self.merge_short_documents(doc_splits, min_len=min_chunk_len)
 
         if verbose:
-            # print some stats about the chunks that have been created
             max_len = 0
             min_len = float("inf")
             lsplits = len(doc_splits)
@@ -59,17 +75,17 @@ class SemanticClusterVizualizer:
         return doc_splits
 
     @staticmethod
-    def merge_short_documents(split_texts, min_len=100):
+    def merge_short_documents(split_texts: List[str], min_len: int = 100) -> List[str]:
         """
-        If we find a document with length < min len, just attach it to the end
-        of the previous document. This prevents a situation where tiny document chunks
-        might be incorrectly classified. There should be a relationship between min len and
-        chunk size
+        Merges short documents into preceding documents to prevent incorrect classification.
 
-        :param min_len:
-        :return:
+        Args:
+            split_texts (List[str]): A list of split text documents.
+            min_len (int, optional): Minimum length for a document to avoid merging. Defaults to 100.
+
+        Returns:
+            List[str]: A list of merged document chunks.
         """
-
         merged_splits = []
         for text in split_texts:
             if merged_splits and (len(text) < min_len):
@@ -80,43 +96,53 @@ class SemanticClusterVizualizer:
 
         return merged_splits
 
-    def embed_original_document_splits(self, doc_splits):
+    def embed_original_document_splits(self, doc_splits: List[str]) -> List[np.ndarray]:
         """
+        Embeds the original document splits using the specified embeddings model.
 
-        :param doc_splits:
-        :return:
+        Args:
+            doc_splits (List[str]): A list of document splits.
+
+        Returns:
+            List[np.ndarray]: A list of embeddings for the document splits.
         """
-
         original_split_embeddings = self.embeddings.embed_documents(doc_splits)
         return original_split_embeddings
 
-    def embed_semantic_groups(self, semantic_groups):
+    def embed_semantic_groups(self, semantic_groups: List[str]) -> List[np.ndarray]:
         """
+        Embeds semantic groups using the specified embeddings model.
 
-        :param semantic_groups:
-        :return:
+        Args:
+            semantic_groups (List[str]): A list of semantic groups.
+
+        Returns:
+            List[np.ndarray]: A list of embeddings for the semantic groups.
         """
-
         semantic_group_embeddings = self.embeddings.embed_documents(semantic_groups)
         return semantic_group_embeddings
 
     def generate_breakpoints(
         self,
-        doc_splits,
-        doc_split_embeddings,
-        length_threshold=10000,
-        plot=True,
-        verbose=True,
-    ):
+        doc_splits: List[str],
+        doc_split_embeddings: List[np.ndarray],
+        length_threshold: int = 10000,
+        plot: bool = True,
+        verbose: bool = True,
+    ) -> Tuple[np.ndarray, List[str]]:
         """
+        Generates breakpoints in document splits based on cosine distances and length threshold.
 
-        :param doc_splits:
-        :param doc_split_embeddings:
-        :param length_threshold:
-        :param plot:
-        :return:
+        Args:
+            doc_splits (List[str]): A list of document splits.
+            doc_split_embeddings (List[np.ndarray]): A list of embeddings for the document splits.
+            length_threshold (int, optional): Minimum length for a chunk to be considered valid. Defaults to 10000.
+            plot (bool, optional): Whether to plot the chunk differences and breakpoints. Defaults to True.
+            verbose (bool, optional): Whether to log the process. Defaults to True.
+
+        Returns:
+            Tuple[np.ndarray, List[str]]: A tuple containing breakpoints and semantic groups.
         """
-
         self.split_generator.split_texts = doc_splits
         self.split_generator.split_text_embeddings = doc_split_embeddings
 
@@ -133,7 +159,6 @@ class SemanticClusterVizualizer:
             n_groups = len(semantic_groups)
             max_len = 0
             min_len = float("inf")
-            lsplits = len(doc_splits)
             sum_len = 0
             for text in semantic_groups:
                 lt = len(text)
@@ -150,16 +175,22 @@ class SemanticClusterVizualizer:
         return breakpoints, semantic_groups
 
     def vizualize_semantic_groups(
-        self, semantic_groups, semantic_group_embeddings, n_clusters=10
-    ):
+        self,
+        semantic_groups: List[str],
+        semantic_group_embeddings: List[np.ndarray],
+        n_clusters: int = 10,
+    ) -> Tuple[Any, Dict[int, str]]:
         """
+        Visualizes semantic groups and optionally clusters them.
 
-        :param semantic_groups:
-        :param semantic_group_embeddings:
-        :param n_clusters:
-        :return:
+        Args:
+            semantic_groups (List[str]): A list of semantic groups.
+            semantic_group_embeddings (List[np.ndarray]): A list of embeddings for the semantic groups.
+            n_clusters (int, optional): Number of clusters to create. Defaults to 10.
+
+        Returns:
+            Tuple[Any, Dict[int, str]]: A tuple containing a DataFrame of splits and a dictionary of semantic group clusters.
         """
-
         self.split_visualizer.plot_2d_semantic_embeddings(
             semantic_group_embeddings, semantic_groups
         )
@@ -183,24 +214,33 @@ class SemanticClusterVizualizer:
             return splits_df, semantic_group_clusters
 
         else:
+            return None, {}
 
-            return None, None
+    def generate_cluster_labels(
+        self, semantic_group_clusters: Dict[int, str], plot: bool = True
+    ) -> Dict[int, Dict[str, str]]:
+        """
+        Generates and optionally plots summaries for semantic group clusters.
 
-    def generate_cluster_labels(self, semantic_group_clusters, plot=True):
+        Args:
+            semantic_group_clusters (Dict[int, str]): A dictionary of semantic group clusters.
+            plot (bool, optional): Whether to plot the summaries. Defaults to True.
 
+        Returns:
+            Dict[int, Dict[str, str]]: A dictionary containing summaries and original texts for each cluster.
+        """
         semantic_group_summaries = self.split_generator.build_semantic_group_summaries(
-            semantic_group_clusters
+            list(semantic_group_clusters.values())
         )
 
         if plot:
-            # plot the grouped splits and their summaries
-            summaries = [v["text"] for k, v in semantic_group_summaries.items()]
+            summaries = [v["text"] for v in semantic_group_summaries.values()]
             semantic_group_cluster_embeddings = self.embeddings.embed_documents(
                 summaries
             )
             self.split_visualizer.plot_chunks_and_summaries(
                 semantic_group_cluster_embeddings,
-                [v["summary"] for k, v in semantic_group_summaries.items()],
+                [v["summary"] for v in semantic_group_summaries.values()],
             )
 
         return semantic_group_summaries
