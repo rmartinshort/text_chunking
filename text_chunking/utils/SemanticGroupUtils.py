@@ -76,7 +76,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine"
+            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -123,7 +123,7 @@ class SemanticGroupUtils:
         """
         cluster_labels = hierarchy.cut_tree(linkage, n_clusters=n_clusters).ravel()
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine"
+            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -178,6 +178,7 @@ class SemanticGroupUtils:
             n_components=n_components_reduced,
             min_dist=0.0,
             metric="cosine",
+            random_state=0
         )
         reduced_embeddings_clustering = dimension_reducer_clustering.fit_transform(
             semantic_group_embeddings
@@ -224,7 +225,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine"
+            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_group_embeddings)
 

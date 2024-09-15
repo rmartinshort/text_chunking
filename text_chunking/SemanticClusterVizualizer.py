@@ -9,7 +9,7 @@ from typing import List, Tuple, Dict, Any
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
 
-class SemanticClusterVizualizer:
+class SemanticClusterVisualizer:
     """
     A class for visualizing semantic clusters of text documents using embeddings and language models.
     """
