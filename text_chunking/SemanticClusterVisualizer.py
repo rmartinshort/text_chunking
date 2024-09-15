@@ -126,7 +126,8 @@ class SemanticClusterVisualizer:
         self,
         doc_splits: List[str],
         doc_split_embeddings: List[np.ndarray],
-        length_threshold: int = 10000,
+        length_threshold: int = 1e9,
+        percentile_threshold: float = 0.95,
         plot: bool = True,
         verbose: bool = True,
     ) -> Tuple[np.ndarray, List[str]]:
@@ -137,6 +138,7 @@ class SemanticClusterVisualizer:
             doc_splits (List[str]): A list of document splits.
             doc_split_embeddings (List[np.ndarray]): A list of embeddings for the document splits.
             length_threshold (int, optional): Minimum length for a chunk to be considered valid. Defaults to 10000.
+            percentile_threshold (float, optional): Percentile of cosine distance used to choose breakpoints
             plot (bool, optional): Whether to plot the chunk differences and breakpoints. Defaults to True.
             verbose (bool, optional): Whether to log the process. Defaults to True.
 
@@ -146,7 +148,7 @@ class SemanticClusterVisualizer:
         self.split_generator.split_texts = doc_splits
         self.split_generator.split_text_embeddings = doc_split_embeddings
 
-        breakpoints = self.split_generator.build_chunks_stack(length_threshold)
+        breakpoints = self.split_generator.build_chunks_stack(length_threshold, cosine_distance_percentile_threshold=percentile_threshold)
         semantic_groups = self.split_generator.build_semantic_groups(breakpoints)
         chunk_cosine_distances = self.split_generator.build_chunk_cosine_distances()
 

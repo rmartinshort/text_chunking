@@ -76,7 +76,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -123,7 +123,7 @@ class SemanticGroupUtils:
         """
         cluster_labels = hierarchy.cut_tree(linkage, n_clusters=n_clusters).ravel()
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -174,7 +174,7 @@ class SemanticGroupUtils:
             np.ndarray: Linkage matrix for hierarchical clustering.
         """
         dimension_reducer_clustering = UMAP(
-            n_neighbors=2,
+            n_neighbors=5,
             n_components=n_components_reduced,
             min_dist=0.0,
             metric="cosine",
@@ -225,7 +225,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=2, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_group_embeddings)
 

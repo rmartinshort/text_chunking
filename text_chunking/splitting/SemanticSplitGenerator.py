@@ -96,14 +96,14 @@ class SemanticSplitGenerator:
         return difference_exceeding
 
     def build_chunks_stack(
-        self, length_threshold: int = 20000, cosine_distance_threshold: float = 0.95
+        self, length_threshold: int = 20000, cosine_distance_percentile_threshold: float = 0.95
     ) -> np.ndarray:
         """
         Builds a stack of text chunks based on length and cosine distance thresholds.
 
         Args:
             length_threshold (int, optional): Minimum length for a text chunk to be considered valid. Defaults to 20000.
-            cosine_distance_threshold (float, optional): Cosine distance threshold for determining breakpoints. Defaults to 0.95.
+            cosine_distance_percentile_threshold (float, optional): Cosine distance percentile threshold for determining breakpoints. Defaults to 0.95.
 
         Returns:
             np.ndarray: An array of indices representing the breakpoints of the chunks.
@@ -116,7 +116,7 @@ class SemanticSplitGenerator:
                 self.split_text_embeddings,
                 start=id_start,
                 end=id_end,
-                threshold=cosine_distance_threshold,
+                threshold=cosine_distance_percentile_threshold,
             )
             updated_breakpoints += id_start
             updated_breakpoints = np.concatenate(
@@ -145,10 +145,22 @@ class SemanticSplitGenerator:
         """
         start_index = 0
         grouped_texts = []
+        # add end criteria
+        breakpoints = np.append(breakpoints, [-1])
         for break_point in breakpoints:
-            grouped_texts.append(
-                "".join([x for x in self.split_texts[start_index : break_point + 1]])
-            )
+
+            # we're at the end of the text
+            if break_point == -1:
+                grouped_texts.append(
+                    " ".join([x for x in self.split_texts[start_index:]])
+                )
+
+            else:
+
+                grouped_texts.append(
+                    " ".join([x for x in self.split_texts[start_index : break_point + 1]])
+                )
+
             start_index = break_point + 1
 
         return grouped_texts
