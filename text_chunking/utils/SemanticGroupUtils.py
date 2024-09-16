@@ -11,13 +11,6 @@ import logging
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 
-
-class SemanticGroupUtils:
-    """
-    A set of tools to manipulate and visualize semantic text splits.
-    """
-
-
 class SemanticGroupUtils:
     """
     A set of tools to manipulate and visualize semantic text splits.
@@ -63,7 +56,7 @@ class SemanticGroupUtils:
 
     @staticmethod
     def plot_2d_semantic_embeddings(
-        semantic_embeddings: List[np.ndarray], semantic_text_groups: List[str]
+        semantic_embeddings: List[np.ndarray], semantic_text_groups: List[str], umap_neighbors: int = 5
     ) -> None:
         """
         Creates a 2D plot of semantic embeddings.
@@ -76,7 +69,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=umap_neighbors, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -108,6 +101,7 @@ class SemanticGroupUtils:
         semantic_text_groups: List[str],
         linkage: np.ndarray,
         n_clusters: int = 30,
+        umap_neighbors: int = 5
     ) -> pd.DataFrame:
         """
         Creates a 2D plot of reduced embeddings with cluster labels.
@@ -123,7 +117,7 @@ class SemanticGroupUtils:
         """
         cluster_labels = hierarchy.cut_tree(linkage, n_clusters=n_clusters).ravel()
         dimension_reducer = UMAP(
-            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=umap_neighbors, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_embeddings)
 
@@ -159,8 +153,9 @@ class SemanticGroupUtils:
     @staticmethod
     def create_hierarchical_clustering(
         semantic_group_embeddings: List[np.ndarray],
-        n_components_reduced: int = 10,
+        n_components_reduced: int = 4,
         plot: bool = True,
+        umap_neighbors: int = 5
     ) -> np.ndarray:
         """
         Creates hierarchical clustering from semantic group embeddings.
@@ -174,7 +169,7 @@ class SemanticGroupUtils:
             np.ndarray: Linkage matrix for hierarchical clustering.
         """
         dimension_reducer_clustering = UMAP(
-            n_neighbors=5,
+            n_neighbors=umap_neighbors,
             n_components=n_components_reduced,
             min_dist=0.0,
             metric="cosine",
@@ -196,11 +191,11 @@ class SemanticGroupUtils:
                 row_linkage=row_linkage,
                 row_cluster=True,
                 col_cluster=False,
-                method="average",
                 annot=True,
                 linewidth=0.5,
                 annot_kws={"size": 8, "color": "white"},
                 cbar_pos=None,
+                dendrogram_ratio=0.25
             )
 
             g.ax_heatmap.set_yticklabels(
@@ -213,6 +208,7 @@ class SemanticGroupUtils:
     def plot_chunks_and_summaries(
         semantic_group_embeddings: List[np.ndarray],
         semantic_group_descriptions: List[str],
+        umap_neighbors: int = 5
     ) -> None:
         """
         Plots the reduced embeddings and their descriptions.
@@ -225,7 +221,7 @@ class SemanticGroupUtils:
             None
         """
         dimension_reducer = UMAP(
-            n_neighbors=5, n_components=2, min_dist=0.0, metric="cosine", random_state=0
+            n_neighbors=umap_neighbors, n_components=2, min_dist=0.0, metric="cosine", random_state=0
         )
         reduced_embeddings = dimension_reducer.fit_transform(semantic_group_embeddings)
 
@@ -277,7 +273,7 @@ class SemanticGroupUtils:
         unique_clusters = len(result["cluster_label"].unique())
         cluster_colors = sns.color_palette("flare", n_colors=unique_clusters)
 
-        fig = plt.figure(figsize=(15, 6))
+        fig = plt.figure(figsize=(25, 6))
         ax = fig.add_subplot(111)
         for i, row in result.iterrows():
             cluster_id = row["cluster_label"]
